@@ -1,0 +1,5 @@
+{
+  "name": "AgriConnect P2P Lending",
+  "description": "A peer-to-peer lending network for African farmers, connecting them based on verified track records and algorithmic trust scores to facilitate informal lending.",
+  "requestFramePermissions": []
+}
