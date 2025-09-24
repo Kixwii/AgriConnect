@@ -1,6 +1,6 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useMemo } from 'react';
 import { Farmer } from '../types';
-import { LocationIcon, CropIcon, CalendarIcon, ChartIcon, ShieldCheckIcon } from './icons';
+import { LocationIcon, CropIcon, CalendarIcon, ChartIcon, ShieldCheckIcon, SparklesIcon } from './icons';
 import TrustScoreGauge from './TrustScoreGauge';
 import { CURRENT_USER_ID } from '../constants';
 
@@ -8,6 +8,8 @@ interface FarmerDetailModalProps {
   farmer: Farmer | null;
   onClose: () => void;
   onRequestConnection: (farmer: Farmer) => void;
+  onGeneratePlan: (farmer: Farmer) => void;
+  currentUser: Farmer | undefined;
 }
 
 const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
@@ -22,9 +24,20 @@ const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string
   </div>
 );
 
-const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose, onRequestConnection }) => {
+const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose, onRequestConnection, onGeneratePlan, currentUser }) => {
   if (!farmer) return null;
   
+  const doesCurrentUserOweFarmer = useMemo(() => {
+    if (!currentUser?.connections || !farmer) {
+      return false;
+    }
+    return currentUser.connections.some(loan => 
+      loan.type === 'borrowed' && 
+      loan.farmerId === farmer.id &&
+      loan.status === 'Active'
+    );
+  }, [currentUser, farmer]);
+
   const repaymentRate = farmer.repaymentHistory.totalLoans > 0 
     ? ((farmer.repaymentHistory.repaidOnTime / farmer.repaymentHistory.totalLoans) * 100).toFixed(0) 
     : 100;
@@ -78,10 +91,15 @@ const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose, 
             </div>
           </div>
           
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-end items-center space-y-4 sm:space-y-0 sm:space-x-4">
-             <button onClick={onClose} className="w-full sm:w-auto px-6 py-3 text-brand-brown-800 bg-white border border-gray-300 rounded-full font-semibold hover:bg-gray-100 transition-colors">
-              Close
-            </button>
+          <div className="mt-8 sm:mt-10 flex flex-col-reverse sm:flex-row justify-end items-center space-y-4 space-y-reverse sm:space-y-0 sm:space-x-4">
+            {doesCurrentUserOweFarmer && (
+               <button 
+                onClick={() => onGeneratePlan(farmer)}
+                className="w-full sm:w-auto px-6 py-3 bg-brand-brown-200 text-brand-brown-900 rounded-full font-semibold hover:bg-brand-brown-300 transition-colors flex items-center justify-center space-x-2">
+                <SparklesIcon className="w-5 h-5" />
+                <span>Generate AI Repayment Plan</span>
+              </button>
+            )}
             {farmer.id !== CURRENT_USER_ID && (
               <button 
                 onClick={() => onRequestConnection(farmer)}
@@ -89,6 +107,9 @@ const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({ farmer, onClose, 
                 Request Loan Connection
               </button>
             )}
+             <button onClick={onClose} className="w-full sm:w-auto px-6 py-3 text-brand-brown-800 bg-white border border-gray-300 rounded-full font-semibold hover:bg-gray-100 transition-colors">
+              Close
+            </button>
           </div>
         </div>
       </div>

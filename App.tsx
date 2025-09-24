@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Farmer, LoanRequest } from './types';
+import { Farmer, LoanRequest, RepaymentPlan } from './types';
 import { MOCK_FARMERS, CURRENT_USER_ID } from './constants';
 import FarmerCard from './components/FarmerCard';
 import FarmerDetailModal from './components/FarmerDetailModal';
 import ConnectionsDashboard from './components/ConnectionsDashboard';
 import LoanRequestModal from './components/LoanRequestModal';
+import AiRepaymentModal from './components/AiRepaymentModal';
 import { UsersIcon } from './components/icons';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const App: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -17,13 +19,20 @@ const App: React.FC = () => {
   const [requestTargetFarmer, setRequestTargetFarmer] = useState<Farmer | null>(null);
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
 
+  // AI Repayment Plan State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiModalFarmer, setAiModalFarmer] = useState<Farmer | null>(null);
+  const [repaymentPlan, setRepaymentPlan] = useState<RepaymentPlan | null>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   useEffect(() => {
     // Simulate API call
     setFarmers(MOCK_FARMERS);
   }, []);
 
   useEffect(() => {
-    const isModalOpen = selectedFarmer !== null || isConnectionsOpen || isRequestModalOpen;
+    const isModalOpen = selectedFarmer !== null || isConnectionsOpen || isRequestModalOpen || isAiModalOpen;
     if (isModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -33,7 +42,7 @@ const App: React.FC = () => {
     return () => {
       document.body.style.overflow = 'auto'; // Cleanup on unmount
     };
-  }, [selectedFarmer, isConnectionsOpen, isRequestModalOpen]);
+  }, [selectedFarmer, isConnectionsOpen, isRequestModalOpen, isAiModalOpen]);
 
   const currentUser = useMemo(() => farmers.find(f => f.id === CURRENT_USER_ID), [farmers]);
   
@@ -69,6 +78,75 @@ const App: React.FC = () => {
       setLoanRequests(prev => [...prev, newRequest]);
     }
   }, [requestTargetFarmer, currentUser]);
+
+  const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
+    if (!process.env.API_KEY) {
+      setAiError("API key is not configured.");
+      setIsGeneratingPlan(false);
+      return;
+    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    const prompt = `You are a financial advisor for small-scale farmers in Africa.
+      Given the following farmer profile:
+      - Location: ${farmer.location}
+      - Main Crops: ${farmer.crops.join(', ')}
+
+      Generate a customized, hypothetical 4-installment loan repayment schedule for a $1000 loan.
+      Base the schedule on typical crop cycles, potential harvest times, and market price fluctuations for their specific crops and region.
+      For each installment, provide a suggested date (month and year) and a brief reasoning for that timing.
+      The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}.
+      Provide the output in JSON format.`;
+    
+    const responseSchema = {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            installment: { type: Type.NUMBER },
+            amount: { type: Type.NUMBER },
+            suggestedDate: { type: Type.STRING },
+            reasoning: { type: Type.STRING },
+          },
+          required: ['installment', 'amount', 'suggestedDate', 'reasoning'],
+        },
+      };
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: responseSchema,
+        }
+      });
+      const plan = JSON.parse(response.text);
+      setRepaymentPlan(plan);
+    } catch (error) {
+      console.error("AI plan generation failed:", error);
+      setAiError("Failed to generate a repayment plan. The AI may be unavailable right now.");
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  }, []);
+
+  const handleGeneratePlan = useCallback((farmer: Farmer) => {
+    setSelectedFarmer(null); // Close detail modal
+    setAiModalFarmer(farmer);
+    setIsAiModalOpen(true);
+    setIsGeneratingPlan(true);
+    setRepaymentPlan(null);
+    setAiError(null);
+    fetchAiRepaymentPlan(farmer);
+  }, [fetchAiRepaymentPlan]);
+
+  const handleCloseAiModal = useCallback(() => {
+    setIsAiModalOpen(false);
+    setAiModalFarmer(null);
+    setRepaymentPlan(null);
+    setAiError(null);
+  }, []);
   
   const filteredAndSortedFarmers = useMemo(() => {
     return farmers
@@ -173,7 +251,13 @@ const App: React.FC = () => {
         )}
       </main>
       
-      <FarmerDetailModal farmer={selectedFarmer} onClose={handleCloseModal} onRequestConnection={handleRequestConnection} />
+      <FarmerDetailModal 
+        farmer={selectedFarmer} 
+        onClose={handleCloseModal} 
+        onRequestConnection={handleRequestConnection}
+        onGeneratePlan={handleGeneratePlan}
+        currentUser={currentUser}
+      />
       <ConnectionsDashboard 
         isOpen={isConnectionsOpen} 
         onClose={() => setIsConnectionsOpen(false)} 
@@ -186,6 +270,14 @@ const App: React.FC = () => {
         onClose={handleCloseRequestModal}
         farmer={requestTargetFarmer}
         onSubmit={handleSubmitLoanRequest}
+      />
+      <AiRepaymentModal
+        isOpen={isAiModalOpen}
+        onClose={handleCloseAiModal}
+        farmer={aiModalFarmer}
+        plan={repaymentPlan}
+        isLoading={isGeneratingPlan}
+        error={aiError}
       />
     </div>
   );

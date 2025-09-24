@@ -33,3 +33,12 @@ export interface LoanRequest {
   message: string;
   status: 'pending' | 'accepted' | 'declined';
 }
+
+export interface RepaymentInstallment {
+  installment: number;
+  amount: number;
+  suggestedDate: string;
+  reasoning: string;
+}
+
+export type RepaymentPlan = RepaymentInstallment[];
