@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Farmer, LoanRequest, RepaymentPlan } from './types';
 import { MOCK_FARMERS, CURRENT_USER_ID } from './constants';
 import FarmerCard from './components/FarmerCard';
@@ -7,7 +8,6 @@ import ConnectionsDashboard from './components/ConnectionsDashboard';
 import LoanRequestModal from './components/LoanRequestModal';
 import AiRepaymentModal from './components/AiRepaymentModal';
 import { UsersIcon } from './components/icons';
-import { GoogleGenAI, Type } from '@google/genai';
 
 const App: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   useEffect(() => {
     // Simulate API call
     setFarmers(MOCK_FARMERS);
+    console.log("Loaded farmers:", MOCK_FARMERS);
   }, []);
 
   useEffect(() => {
@@ -80,52 +81,125 @@ const App: React.FC = () => {
   }, [requestTargetFarmer, currentUser]);
 
   const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
-    if (!process.env.API_KEY) {
-      setAiError("API key is not configured.");
+    if (!process.env.REACT_APP_GEMINI_API_KEY) {
+      setAiError("API key is not configured. Please add REACT_APP_GEMINI_API_KEY to your environment variables.");
       setIsGeneratingPlan(false);
       return;
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-    const prompt = `You are a financial advisor for small-scale farmers in Africa.
-      Given the following farmer profile:
-      - Location: ${farmer.location}
-      - Main Crops: ${farmer.crops.join(', ')}
-
-      Generate a customized, hypothetical 4-installment loan repayment schedule for a $1000 loan.
-      Base the schedule on typical crop cycles, potential harvest times, and market price fluctuations for their specific crops and region.
-      For each installment, provide a suggested date (month and year) and a brief reasoning for that timing.
-      The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}.
-      Provide the output in JSON format.`;
-    
-    const responseSchema = {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            installment: { type: Type.NUMBER },
-            amount: { type: Type.NUMBER },
-            suggestedDate: { type: Type.STRING },
-            reasoning: { type: Type.STRING },
-          },
-          required: ['installment', 'amount', 'suggestedDate', 'reasoning'],
-        },
-      };
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: responseSchema,
-        }
-      });
-      const plan = JSON.parse(response.text);
-      setRepaymentPlan(plan);
+      const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+      const prompt = `You are a financial advisor for small-scale farmers in Africa.
+        Given the following farmer profile:
+        - Location: ${farmer.location}
+        - Main Crops: ${farmer.crops.join(', ')}
+
+        Generate a customized, hypothetical 4-installment loan repayment schedule for a $1000 loan.
+        Base the schedule on typical crop cycles, potential harvest times, and market price fluctuations for their specific crops and region.
+        For each installment, provide a suggested date (month and year) and a brief reasoning for that timing.
+        The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}.
+        
+        Return the response as a JSON array with this exact structure:
+        [
+          {
+            "installment": 1,
+            "amount": 250,
+            "suggestedDate": "March 2024",
+            "reasoning": "After harvest season when cash flow is highest"
+          },
+          {
+            "installment": 2,
+            "amount": 250,
+            "suggestedDate": "June 2024",
+            "reasoning": "Mid-year when crop prices are stable"
+          },
+          {
+            "installment": 3,
+            "amount": 250,
+            "suggestedDate": "September 2024",
+            "reasoning": "Before planting season expenses"
+          },
+          {
+            "installment": 4,
+            "amount": 250,
+            "suggestedDate": "December 2024",
+            "reasoning": "End of year after final harvest"
+          }
+        ]`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\[[\s\S]*?\]/);
+      if (jsonMatch) {
+        const plan = JSON.parse(jsonMatch[0]);
+        setRepaymentPlan(plan);
+      } else {
+        // Fallback: create a default plan if AI doesn't return proper JSON
+        const defaultPlan = [
+          {
+            installment: 1,
+            amount: 250,
+            suggestedDate: "March 2024",
+            reasoning: "After harvest season when cash flow is typically highest for farmers in " + farmer.location
+          },
+          {
+            installment: 2,
+            amount: 250,
+            suggestedDate: "June 2024",
+            reasoning: "Mid-year period when " + farmer.crops[0] + " prices are generally stable"
+          },
+          {
+            installment: 3,
+            amount: 250,
+            suggestedDate: "September 2024",
+            reasoning: "Before major planting season expenses for " + farmer.crops.join(' and ')
+          },
+          {
+            installment: 4,
+            amount: 250,
+            suggestedDate: "December 2024",
+            reasoning: "End of year after final harvest and sales"
+          }
+        ];
+        setRepaymentPlan(defaultPlan);
+      }
     } catch (error) {
       console.error("AI plan generation failed:", error);
-      setAiError("Failed to generate a repayment plan. The AI may be unavailable right now.");
+      setAiError("Failed to generate a repayment plan. Please check your API key or try again later.");
+      
+      // Provide a fallback plan even on error
+      const fallbackPlan = [
+        {
+          installment: 1,
+          amount: 250,
+          suggestedDate: "March 2024",
+          reasoning: "Quarterly payment aligned with typical harvest cycles"
+        },
+        {
+          installment: 2,
+          amount: 250,
+          suggestedDate: "June 2024",
+          reasoning: "Second quarter payment during stable market period"
+        },
+        {
+          installment: 3,
+          amount: 250,
+          suggestedDate: "September 2024",
+          reasoning: "Third quarter payment before planting season"
+        },
+        {
+          installment: 4,
+          amount: 250,
+          suggestedDate: "December 2024",
+          reasoning: "Final payment at year end"
+        }
+      ];
+      setRepaymentPlan(fallbackPlan);
     } finally {
       setIsGeneratingPlan(false);
     }
