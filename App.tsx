@@ -8,6 +8,8 @@ import LoanRequestModal from './components/LoanRequestModal';
 import AiRepaymentModal from './components/AiRepaymentModal';
 import { UsersIcon } from './components/icons';
 import { GoogleGenAI, Type } from '@google/genai';
+require('dotenv').config();
+
 
 const App: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -29,6 +31,7 @@ const App: React.FC = () => {
   useEffect(() => {
     // Simulate API call
     setFarmers(MOCK_FARMERS);
+    console.log("loading page");
   }, []);
 
   useEffect(() => {
@@ -80,12 +83,12 @@ const App: React.FC = () => {
   }, [requestTargetFarmer, currentUser]);
 
   const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
-    if (!process.env.API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       setAiError("API key is not configured.");
       setIsGeneratingPlan(false);
       return;
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const prompt = `You are a financial advisor for small-scale farmers in Africa.
       Given the following farmer profile:
