@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Farmer } from '../types';
 import TrustScoreGauge from './TrustScoreGauge';

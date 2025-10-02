@@ -1,11 +1,40 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AgriConnect P2P Lending</title>
-    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                brown: {
+                  50: '#fdf8f6',
+                  200: '#eaddd7',
+                  300: '#e0cec7',
+                  800: '#846358',
+                  900: '#43302b',
+                },
+                green: {
+                  50: '#f0fdf4',
+                  100: '#dcfce7',
+                  200: '#bbf7d0',
+                  300: '#86efac',
+                  500: '#22c55e',
+                  600: '#16a34a',
+                  700: '#15803d',
+                  800: '#166534',
+                  900: '#14532d',
+                },
+              },
+            },
+          },
+        },
+      };
+    </script>
   <script type="importmap">
 {
   "imports": {
@@ -16,6 +45,7 @@
   }
 }
 </script>
+<script type="module" src="./src/index.tsx"></script>
 </head>
   <body class="bg-brand-brown-50">
     <div id="root"></div>

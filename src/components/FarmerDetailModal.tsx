@@ -1,3 +1,4 @@
+
 import React, { Fragment, useMemo } from 'react';
 import { Farmer } from '../types';
 import { LocationIcon, CropIcon, CalendarIcon, ChartIcon, ShieldCheckIcon, SparklesIcon } from './icons';
