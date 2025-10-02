@@ -1,5 +1,5 @@
 {
-  "name": "AgriConnect P2P Lending",
-  "description": "A peer-to-peer lending network for African farmers, connecting them based on verified track records and algorithmic trust scores to facilitate informal lending.",
+  "name": "AgriConnect Pastoral",
+  "description": "A comprehensive platform for pastoralist communities and livestock-dependent households in Kenya, featuring P2P lending, market intelligence, weather alerts, and resource management to address middleman exploitation and improve market access.",
   "requestFramePermissions": []
 }
