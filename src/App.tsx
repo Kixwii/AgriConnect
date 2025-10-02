@@ -9,7 +9,7 @@ import LoanRequestModal from './components/LoanRequestModal';
 import AiRepaymentModal from './components/AiRepaymentModal';
 import { UsersIcon } from './components/icons';
 import { GoogleGenAI, Type } from '@google/genai';
-require('dotenv').config();
+
 
 const App: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
