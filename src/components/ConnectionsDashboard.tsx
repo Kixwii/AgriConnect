@@ -1,18 +1,18 @@
 
 import React, { useMemo } from 'react';
-import { Farmer, Loan, LoanRequest } from '../types';
+import { Herder, Loan, LoanRequest } from '../types';
 import { LocationIcon, CurrencyDollarIcon, CalendarIcon, PaperAirplaneIcon } from './icons';
 
 interface ConnectionsDashboardProps {
   isOpen: boolean;
   onClose: () => void;
-  user: Farmer | undefined;
-  allFarmers: Farmer[];
+  user: Herder | undefined;
+  allHerders: Herder[];
   requests: LoanRequest[];
 }
 
-const LoanCard: React.FC<{ loan: Loan; connectedFarmer: Farmer | undefined }> = ({ loan, connectedFarmer }) => {
-  if (!connectedFarmer) return null;
+const LoanCard: React.FC<{ loan: Loan; connectedHerder: Herder | undefined }> = ({ loan, connectedHerder }) => {
+  if (!connectedHerder) return null;
 
   const isLent = loan.type === 'lent';
   const amountColor = isLent ? 'text-brand-green-600' : 'text-red-600';
@@ -20,12 +20,12 @@ const LoanCard: React.FC<{ loan: Loan; connectedFarmer: Farmer | undefined }> = 
 
   return (
     <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex items-start space-x-3">
-      <img src={connectedFarmer.avatarUrl} alt={connectedFarmer.name} className="w-16 h-16 rounded-full border-4 border-white shadow-sm flex-shrink-0" />
+      <img src={connectedHerder.avatarUrl} alt={connectedHerder.name} className="w-16 h-16 rounded-full border-4 border-white shadow-sm flex-shrink-0" />
       <div className="flex-grow min-w-0">
-        <h4 className="font-bold text-brand-green-900 truncate">{connectedFarmer.name}</h4>
+        <h4 className="font-bold text-brand-green-900 truncate">{connectedHerder.name}</h4>
         <div className="flex items-center text-gray-500 text-sm mt-1">
           <LocationIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
-          <span className="truncate">{connectedFarmer.location}</span>
+          <span className="truncate">{connectedHerder.location}</span>
         </div>
         <div className="flex items-center text-gray-500 text-sm mt-1">
           <CalendarIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
@@ -33,30 +33,30 @@ const LoanCard: React.FC<{ loan: Loan; connectedFarmer: Farmer | undefined }> = 
         </div>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className={`text-2xl font-bold ${amountColor}`}>${loan.amount.toLocaleString()}</p>
+        <p className={`text-2xl font-bold ${amountColor}`}>KSh {loan.amount.toLocaleString()}</p>
         <span className={`mt-1 inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full ${statusColor}`}>{loan.status}</span>
       </div>
     </div>
   );
 };
 
-const RequestCard: React.FC<{ request: LoanRequest; connectedFarmer: Farmer | undefined; type: 'incoming' | 'outgoing' }> = ({ request, connectedFarmer, type }) => {
-    if (!connectedFarmer) return null;
+const RequestCard: React.FC<{ request: LoanRequest; connectedHerder: Herder | undefined; type: 'incoming' | 'outgoing' }> = ({ request, connectedHerder, type }) => {
+    if (!connectedHerder) return null;
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
             <div className="flex items-start space-x-3">
-                <img src={connectedFarmer.avatarUrl} alt={connectedFarmer.name} className="w-16 h-16 rounded-full border-4 border-white shadow-sm flex-shrink-0" />
+                <img src={connectedHerder.avatarUrl} alt={connectedHerder.name} className="w-16 h-16 rounded-full border-4 border-white shadow-sm flex-shrink-0" />
                 <div className="flex-grow min-w-0">
-                    <h4 className="font-bold text-brand-green-900 truncate">{connectedFarmer.name}</h4>
+                    <h4 className="font-bold text-brand-green-900 truncate">{connectedHerder.name}</h4>
                     <div className="flex items-center text-gray-500 text-sm mt-1">
                         <LocationIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                        <span className="truncate">{connectedFarmer.location}</span>
+                        <span className="truncate">{connectedHerder.location}</span>
                     </div>
                      <p className="text-gray-600 text-sm mt-2 line-clamp-2 italic">"{request.message || 'No message provided.'}"</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                    <p className={`text-2xl font-bold text-brand-brown-800`}>${request.amount.toLocaleString()}</p>
+                    <p className={`text-2xl font-bold text-brand-brown-800`}>KSh {request.amount.toLocaleString()}</p>
                     <span className={`mt-1 inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 capitalize`}>{request.status}</span>
                 </div>
             </div>
@@ -71,7 +71,7 @@ const RequestCard: React.FC<{ request: LoanRequest; connectedFarmer: Farmer | un
 };
 
 
-const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onClose, user, allFarmers, requests }) => {
+const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onClose, user, allHerders, requests }) => {
   const { lentLoans, borrowedLoans, incomingRequests, outgoingRequests } = useMemo(() => {
     if (!user) return { lentLoans: [], borrowedLoans: [], incomingRequests: [], outgoingRequests: [] };
     
@@ -120,7 +120,7 @@ const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onC
                                <RequestCard 
                                    key={req.id}
                                    request={req}
-                                   connectedFarmer={allFarmers.find(f => f.id === req.toId)}
+                                   connectedHerder={allHerders.find(h => h.id === req.toId)}
                                    type="outgoing"
                                />
                            ))
@@ -140,7 +140,7 @@ const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onC
                                <RequestCard 
                                    key={req.id}
                                    request={req}
-                                   connectedFarmer={allFarmers.find(f => f.id === req.fromId)}
+                                   connectedHerder={allHerders.find(h => h.id === req.fromId)}
                                    type="incoming"
                                />
                            ))
@@ -158,13 +158,13 @@ const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onC
                         {lentLoans.length > 0 ? (
                             lentLoans.map(loan => (
                                 <LoanCard 
-                                    key={`${loan.farmerId}-lent`}
+                                    key={`${loan.herderId}-lent`}
                                     loan={loan} 
-                                    connectedFarmer={allFarmers.find(f => f.id === loan.farmerId)} 
+                                    connectedHerder={allHerders.find(h => h.id === loan.herderId)} 
                                 />
                             ))
                         ) : (
-                            <p className="text-gray-500 italic">You have not lent money to any farmers yet.</p>
+                            <p className="text-gray-500 italic">You have not lent money to any herders yet.</p>
                         )}
                     </div>
                 </section>
@@ -177,9 +177,9 @@ const ConnectionsDashboard: React.FC<ConnectionsDashboardProps> = ({ isOpen, onC
                          {borrowedLoans.length > 0 ? (
                             borrowedLoans.map(loan => (
                                 <LoanCard 
-                                    key={`${loan.farmerId}-borrowed`}
+                                    key={`${loan.herderId}-borrowed`}
                                     loan={loan} 
-                                    connectedFarmer={allFarmers.find(f => f.id === loan.farmerId)} 
+                                    connectedHerder={allHerders.find(h => h.id === loan.herderId)} 
                                 />
                             ))
                         ) : (
