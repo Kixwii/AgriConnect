@@ -82,12 +82,12 @@ const App: React.FC = () => {
   }, [requestTargetFarmer, currentUser]);
 
   const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
-    if (!process.env.API_KEY) {
+    if (!process.env.REACT_APP_GEMINI_API_KEY) {
       setAiError("API key is not configured.");
       setIsGeneratingPlan(false);
       return;
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.REACT_APP_GEMINI_API_KEY });
 
     const prompt = `You are a financial advisor for small-scale farmers in Africa.
       Given the following farmer profile:
