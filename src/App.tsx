@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Farmer, LoanRequest, RepaymentPlan } from './types';
 import { MOCK_FARMERS, CURRENT_USER_ID } from './constants';
@@ -8,8 +7,7 @@ import ConnectionsDashboard from './components/ConnectionsDashboard';
 import LoanRequestModal from './components/LoanRequestModal';
 import AiRepaymentModal from './components/AiRepaymentModal';
 import { UsersIcon } from './components/icons';
-import { GoogleGenAI, Type } from '@google/genai';
-
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 const App: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -82,12 +80,16 @@ const App: React.FC = () => {
   }, [requestTargetFarmer, currentUser]);
 
   const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
-    if (!process.env.REACT_APP_GEMINI_API_KEY) {
-      setAiError("API key is not configured.");
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      setAiError("API key is not configured. Please add REACT_APP_GEMINI_API_KEY to your .env file.");
       setIsGeneratingPlan(false);
       return;
     }
-    const ai = new GoogleGenAI({ apiKey: process.env.REACT_APP_GEMINI_API_KEY });
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = `You are a financial advisor for small-scale farmers in Africa.
       Given the following farmer profile:
@@ -98,32 +100,34 @@ const App: React.FC = () => {
       Base the schedule on typical crop cycles, potential harvest times, and market price fluctuations for their specific crops and region.
       For each installment, provide a suggested date (month and year) and a brief reasoning for that timing.
       The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}.
-      Provide the output in JSON format.`;
+      Provide the output in JSON format as an array of objects with: installment (number), amount (number), suggestedDate (string), reasoning (string).`;
     
     const responseSchema = {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            installment: { type: Type.NUMBER },
-            amount: { type: Type.NUMBER },
-            suggestedDate: { type: Type.STRING },
-            reasoning: { type: Type.STRING },
-          },
-          required: ['installment', 'amount', 'suggestedDate', 'reasoning'],
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          installment: { type: SchemaType.NUMBER },
+          amount: { type: SchemaType.NUMBER },
+          suggestedDate: { type: SchemaType.STRING },
+          reasoning: { type: SchemaType.STRING },
         },
-      };
+        required: ['installment', 'amount', 'suggestedDate', 'reasoning'],
+      },
+    };
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: responseSchema,
         }
       });
-      const plan = JSON.parse(response.text);
+      
+      const response = result.response;
+      const text = response.text();
+      const plan = JSON.parse(text);
       setRepaymentPlan(plan);
     } catch (error) {
       console.error("AI plan generation failed:", error);
@@ -172,9 +176,7 @@ const App: React.FC = () => {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <svg className="w-8 h-8 text-brand-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-            </svg>
+            <span className="text-3xl">👨‍🌾💰</span>
             <h1 className="text-2xl font-bold text-brand-green-800">AgriConnect</h1>
           </div>
           <div className="flex items-center space-x-4">

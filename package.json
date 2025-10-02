@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "latest",
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.3",
     "react": "^19.1.1",
