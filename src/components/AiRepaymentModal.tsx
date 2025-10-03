@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Farmer, RepaymentPlan } from '../types';
 import { SparklesIcon, SpinnerIcon, CalendarIcon } from './icons';
@@ -21,11 +20,11 @@ const AiRepaymentModal: React.FC<AiRepaymentModalProps> = ({ isOpen, onClose, fa
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-transform duration-300 animate-fade-in-up"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-transform duration-300 animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
         style={{ animation: 'fadeInUp 0.3s ease-out forwards' }}
       >
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-8 flex-shrink-0">
           <div className="flex items-start space-x-4">
              <div className="flex-shrink-0 w-12 h-12 bg-brand-green-100 rounded-full flex items-center justify-center text-brand-green-600">
                 <SparklesIcon className="w-7 h-7" />
@@ -36,7 +35,7 @@ const AiRepaymentModal: React.FC<AiRepaymentModalProps> = ({ isOpen, onClose, fa
             </div>
           </div>
 
-          <div className="mt-6 min-h-[250px] flex flex-col justify-center">
+          <div className="mt-6 min-h-[250px] overflow-y-auto max-h-[50vh] px-1">
             {isLoading && (
               <div className="text-center">
                 <SpinnerIcon className="w-12 h-12 text-brand-green-500 mx-auto" />
@@ -52,9 +51,6 @@ const AiRepaymentModal: React.FC<AiRepaymentModalProps> = ({ isOpen, onClose, fa
             )}
             {plan && !isLoading && (
               <div className="space-y-4">
-                 <p className="text-sm text-center text-gray-500 bg-brand-brown-50 p-3 rounded-lg">
-                    This is a hypothetical schedule for a <span className="font-semibold">$1,000</span> loan. Actual amounts and dates should be mutually agreed upon.
-                </p>
                 <div className="flow-root">
                     <ul className="-mb-8">
                         {plan.map((item, itemIdx) => (
@@ -90,7 +86,7 @@ const AiRepaymentModal: React.FC<AiRepaymentModalProps> = ({ isOpen, onClose, fa
           </div>
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 flex justify-end rounded-b-2xl">
+        <div className="bg-gray-50 px-6 py-4 flex justify-end rounded-b-2xl flex-shrink-0">
           <button
             type="button"
             onClick={onClose}

@@ -121,7 +121,7 @@ const App: React.FC = () => {
           suggestedDate: { type: SchemaType.STRING },
           reasoning: { type: SchemaType.STRING },
         },
-        required: ['installment', 'amount', 'suggestedDate', 'reasoning'] as string[],
+        required: ['installment', 'amount', 'suggestedDate', 'reasoning'],
       },
     };
 
