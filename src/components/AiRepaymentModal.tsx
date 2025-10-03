@@ -52,9 +52,6 @@ const AiRepaymentModal: React.FC<AiRepaymentModalProps> = ({ isOpen, onClose, fa
             )}
             {plan && !isLoading && (
               <div className="space-y-4">
-                 <p className="text-sm text-center text-gray-500 bg-brand-brown-50 p-3 rounded-lg">
-                    This is a hypothetical schedule for a <span className="font-semibold">$1,000</span> loan. Actual amounts and dates should be mutually agreed upon.
-                </p>
                 <div className="flow-root">
                     <ul className="-mb-8">
                         {plan.map((item, itemIdx) => (

@@ -80,27 +80,51 @@ const App: React.FC = () => {
   }, [requestTargetFarmer, currentUser]);
 
   const fetchAiRepaymentPlan = useCallback(async (farmer: Farmer) => {
-    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      setAiError("API key is not configured. Please add REACT_APP_GEMINI_API_KEY to your .env file.");
+      console.error("API key missing");
+      setAiError("API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.");
       setIsGeneratingPlan(false);
       return;
     }
 
+    console.log("API Key loaded, length:", apiKey.length);
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-    const prompt = `You are a financial advisor for small-scale farmers in Africa.
-      Given the following farmer profile:
-      - Location: ${farmer.location}
-      - Main Crops: ${farmer.crops.join(', ')}
+    const prompt = `You are an expert agricultural economist and financial advisor specializing in smallholder farming in Africa. Analyze the following farmer's profile and generate a data-driven loan repayment plan.
 
-      Generate a customized, hypothetical 4-installment loan repayment schedule for a $1000 loan.
-      Base the schedule on typical crop cycles, potential harvest times, and market price fluctuations for their specific crops and region.
-      For each installment, provide a suggested date (month and year) and a brief reasoning for that timing.
-      The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}.
-      Provide the output in JSON format as an array of objects with: installment (number), amount (number), suggestedDate (string), reasoning (string).`;
+FARMER PROFILE:
+- Location: ${farmer.location}
+- Main Crops: ${farmer.crops.join(', ')}
+- Average Yield: ${farmer.avgYieldKgPerHectare} kg/hectare
+- Farming Experience: ${farmer.seasonsFarmed} seasons
+- Current Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+
+TASK: Create a realistic 4-installment repayment schedule for a $1000 loan that maximizes the farmer's ability to repay while maintaining profitability.
+
+ANALYSIS REQUIRED FOR EACH INSTALLMENT:
+1. **Crop Harvest Cycles**: Consider the specific planting and harvest windows for each crop in this region
+2. **Market Pricing**: Factor in typical market prices, seasonal demand peaks, and post-harvest price drops
+3. **Economic Factors**: Account for regional inflation rates (typically 5-15% in Sub-Saharan Africa), currency fluctuations, and local economic conditions
+4. **Yield-Based Income**: Calculate expected revenue based on the farmer's actual yield performance (${farmer.avgYieldKgPerHectare} kg/ha)
+5. **Cash Flow Timing**: Align payments with periods of maximum liquidity after harvest sales
+6. **Risk Mitigation**: Avoid scheduling payments during lean seasons, planting periods, or when working capital is needed
+
+For each installment, provide:
+- Installment number (1-4)
+- Payment amount in USD (totaling $1000 + reasonable interest)
+- Suggested payment date (specific month and year)
+- Detailed reasoning that includes:
+  * Which crops are being harvested around that time
+  * Expected market conditions and pricing trends
+  * Why this timing optimizes cash flow
+  * Consideration of inflation and economic factors
+  * How the farmer's yield affects profitability
+
+Return ONLY valid JSON array format with objects containing: installment, amount, suggestedDate, reasoning.`;
     
     const responseSchema = {
       type: SchemaType.ARRAY,
@@ -131,7 +155,8 @@ const App: React.FC = () => {
       setRepaymentPlan(plan);
     } catch (error) {
       console.error("AI plan generation failed:", error);
-      setAiError("Failed to generate a repayment plan. The AI may be unavailable right now.");
+      console.error("Error details:", error.message || error);
+      setAiError(`Failed to generate a repayment plan: ${error.message || "The AI may be unavailable right now."}`);
     } finally {
       setIsGeneratingPlan(false);
     }
